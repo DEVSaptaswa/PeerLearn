@@ -119,8 +119,43 @@ def soft_delete_discussion(discussion_id: str, deleted_by: int) -> bool:
     return result.modified_count > 0
 
 
-def upvote_discussion(discussion_id: str) -> None:
-    discussions().update_one({"_id": ObjectId(discussion_id)}, {"$inc": {"upvotes": 1}})
+def toggle_upvote_discussion(discussion_id: str, user_id: int) -> dict:
+    """Returns {'upvotes': N, 'voted': bool}"""
+    from bson import ObjectId
+    key = f"upvote:{ObjectId(discussion_id)}"
+    voter_field = f"voters.u{user_id}"
+    
+    doc = discussions().find_one({"_id": ObjectId(discussion_id)}, {"voters": 1, "upvotes": 1})
+    if not doc:
+        return {"upvotes": 0, "voted": False}
+    
+    voters = doc.get("voters", {})
+    already_voted = voters.get(f"u{user_id}", False)
+    
+    if already_voted:
+        discussions().update_one(
+            {"_id": ObjectId(discussion_id)},
+            {"$inc": {"upvotes": -1}, "$unset": {voter_field: ""}}
+        )
+        new_count = max(0, doc.get("upvotes", 0) - 1)
+        return {"upvotes": new_count, "voted": False}
+    else:
+        discussions().update_one(
+            {"_id": ObjectId(discussion_id)},
+            {"$inc": {"upvotes": 1}, "$set": {voter_field: True}}
+        )
+        return {"upvotes": doc.get("upvotes", 0) + 1, "voted": True}
+
+
+def get_user_voted_discussions(user_id: int, discussion_ids: list) -> set:
+    """Return set of discussion_id strings the user has upvoted."""
+    from bson import ObjectId
+    voter_field = f"voters.u{user_id}"
+    docs = discussions().find(
+        {"_id": {"$in": [ObjectId(d) for d in discussion_ids]}, voter_field: True},
+        {"_id": 1}
+    )
+    return {str(d["_id"]) for d in docs}
 
 
 # ── Message helpers ────────────────────────────────────────────────────────────

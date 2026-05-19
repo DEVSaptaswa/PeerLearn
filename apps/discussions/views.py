@@ -14,7 +14,7 @@ from apps.accounts.models import User
 from apps.channels.models import Channel, ChannelMembership, ModerationLog
 from utils.mongo_client import (
     create_discussion, create_message, get_discussion, get_messages,
-    list_discussions, moderator_soft_delete_message, upvote_discussion,
+    list_discussions, moderator_soft_delete_message,
 )
 
 DELETED_MESSAGE_PLACEHOLDER = (
@@ -116,12 +116,18 @@ def discussions_api(request, channel_slug):
     author_ids = list({d["author_id"] for d in discs})
     users = {u.pk: u for u in User.objects.filter(pk__in=author_ids).select_related("profile")}
 
+    # Check which discussions this user has already voted on
+    from utils.mongo_client import get_user_voted_discussions
+    disc_ids = [str(d["_id"]) for d in discs]
+    voted_ids = get_user_voted_discussions(request.user.pk, disc_ids)
+
     result = []
     for d in discs:
         sd = _serialize_discussion(d)
         author = users.get(d["author_id"])
         if author:
             p = getattr(author, "profile", None)
+            sd["user_voted"] = sd["id"] in voted_ids
             sd["author_username"]  = author.username
             sd["author_display"]   = author.get_display_name()
             sd["author_color"]     = p.avatar_color if p else "#5865F2"
@@ -202,8 +208,9 @@ def post_message(request, channel_slug, discussion_id):
 @login_required
 @require_POST
 def upvote_discussion_view(request, discussion_id):
-    upvote_discussion(discussion_id)
-    return JsonResponse({"ok": True})
+    from utils.mongo_client import toggle_upvote_discussion
+    result = toggle_upvote_discussion(discussion_id, request.user.pk)
+    return JsonResponse(result)
 
 
 # ── Moderator: soft-delete a message ──────────────────────────────────────────

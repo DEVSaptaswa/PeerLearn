@@ -427,7 +427,7 @@ function renderDiscussionCard(d, channelSlug) {
 
   return `
     <div class="disc-vote-col">
-      <button class="upvote-btn" onclick="upvoteDiscussion('${d.id}',this)" title="Upvote">
+      <button class="upvote-btn ${d.user_voted ? 'voted' : ''}" onclick="upvoteDiscussion('${d.id}',this)" title="Upvote">
         <i class="bi bi-arrow-up-circle-fill"></i>
       </button>
       <span class="vote-count">${d.upvotes}</span>
@@ -582,13 +582,18 @@ function appendMessageToThread(msg) {
   14. UPVOTE  (fixed URL — /discussions/upvote/<id>/)
 ═══════════════════════════════════════════════════════════════════ */
 async function upvoteDiscussion(discussionId, buttonEl) {
-  if (buttonEl.classList.contains("voted")) return;
   try {
-    await apiFetch(`/discussions/upvote/${discussionId}/`, {method:"POST"});
-    buttonEl.classList.add("voted");
+    const data = await apiFetch(`/discussions/upvote/${discussionId}/`, {method:"POST"});
+    
     const countEl = buttonEl.closest(".disc-vote-col,.disc-op-footer")
       ?.querySelector(".vote-count,.upvote-btn-inline span");
-    if (countEl) countEl.textContent = parseInt(countEl.textContent,10) + 1;
+    if (countEl) countEl.textContent = data.upvotes;
+    
+    if (data.voted) {
+      buttonEl.classList.add("voted");
+    } else {
+      buttonEl.classList.remove("voted");
+    }
     buttonEl.style.transform = "scale(1.3)";
     setTimeout(() => buttonEl.style.transform = "", 300);
   } catch(e) { showToast(e.message,"error"); }

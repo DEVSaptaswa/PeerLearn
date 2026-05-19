@@ -34,7 +34,7 @@ class ProfileEditForm(forms.ModelForm):
 
     class Meta:
         model = Profile
-        fields = ("avatar",)
+        fields = ("avatar", "banner")
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)

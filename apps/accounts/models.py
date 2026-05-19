@@ -12,6 +12,10 @@ def avatar_upload_path(instance, filename):
     ext = filename.rsplit(".", 1)[-1]
     return os.path.join("avatars", f"user_{instance.user.pk}.{ext}")
 
+def banner_upload_path(instance, filename):
+    ext = filename.rsplit(".", 1)[-1]
+    return os.path.join("banners", f"user_{instance.user.pk}.{ext}")
+
 
 class User(AbstractUser):
     """Extended auth user — stored in MySQL."""
@@ -52,6 +56,7 @@ class Profile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     avatar = models.ImageField(upload_to=avatar_upload_path, blank=True, null=True)
+    banner = models.ImageField(upload_to=banner_upload_path, blank=True, null=True)
     # Avatar background colour — generated at signup from username hash
     avatar_color = models.CharField(max_length=7, default="#5865F2")
     threads_started = models.PositiveIntegerField(default=0)
