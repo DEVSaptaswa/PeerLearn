@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PeerLearn — Windows local development requirements
+# Use this file ONLY when running locally on Windows without Docker.
+# For Docker (recommended), use the main requirements.txt — the Dockerfile
+# handles all C extension compilation inside Linux containers.
+#
+# Install with:
+#   pip install -r requirements.windows.txt
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Web Framework ─────────────────────────────────────────────────────────────
+Django==4.2.9
+
+# ── Database drivers ──────────────────────────────────────────────────────────
+# PyMySQL is a pure-Python MySQL driver — no C compiler needed on Windows.
+# mysqlclient (in requirements.txt) requires Visual C++ Build Tools on Windows.
+PyMySQL==1.1.0
+pymongo==4.6.1
+
+# ── Cache / Presence ──────────────────────────────────────────────────────────
+redis==5.0.1
+django-redis==5.4.0
+
+# ── Static files ──────────────────────────────────────────────────────────────
+whitenoise==6.6.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv==1.0.0
+Pillow==10.2.0
+
+# NOTE: gunicorn is intentionally excluded — it does not run on Windows.
+# Use Django's built-in dev server instead:  python manage.py runserver

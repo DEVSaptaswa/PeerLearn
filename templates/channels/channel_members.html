@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Members — #{{ channel.name }}{% endblock %}
+{% block content %}
+<div class="feed-container" style="max-width:680px">
+  <a href="{% url 'channels:detail' slug=channel.slug %}" class="back-link">
+    <i class="bi bi-arrow-left-circle-fill"></i> Back to #{{ channel.name }}
+  </a>
+
+  <div class="feed-header" style="margin-top:16px">
+    <h1 class="feed-title">
+      <span style="font-size:1.6rem">{{ channel.icon }}</span>
+      #{{ channel.name }} — Members
+    </h1>
+    <span class="feed-subtitle">{{ memberships|length }} member{{ memberships|length|pluralize }}</span>
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+    {% for m in memberships %}
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border)">
+      {% with p=m.user.profile %}
+      <a href="{% url 'accounts:user_profile' username=m.user.username %}" style="display:flex;align-items:center;gap:12px;flex:1;text-decoration:none;color:inherit">
+        {% if p.get_avatar_url %}
+          <img src="{{ p.get_avatar_url }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover" />
+        {% else %}
+          <div style="width:40px;height:40px;border-radius:50%;background:{{ p.avatar_color }};display:flex;align-items:center;justify-content:center;font-weight:700;color:white">
+            {{ m.user.get_avatar_initial }}
+          </div>
+        {% endif %}
+        <div>
+          <div style="font-weight:600;font-size:14px">{{ m.user.get_display_name }}</div>
+          <div style="font-size:12px;color:var(--text-muted)">@{{ m.user.username }}</div>
+        </div>
+      </a>
+      {% endwith %}
+
+      <div style="display:flex;align-items:center;gap:8px">
+        {% if m.role == "owner" %}
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(254,231,92,.15);color:#FEE75C">OWNER</span>
+        {% elif m.role == "moderator" %}
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(87,242,135,.15);color:var(--green)">MOD</span>
+        {% endif %}
+        {% if not m.can_post %}
+          <span style="font-size:11px;color:var(--text-muted)">read-only</span>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-feed" style="padding:40px">No members yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

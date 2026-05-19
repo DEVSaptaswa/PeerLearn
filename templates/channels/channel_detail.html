@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}#{{ channel.name }}{% endblock %}
+
+{% block content %}
+<div class="channel-view" data-channel-slug="{{ channel.slug }}" data-channel-id="{{ channel.pk }}">
+
+  <!-- Channel Header -->
+  <div class="channel-header" style="--accent:{{ channel.color }}">
+    <div class="channel-header-inner">
+      <div class="channel-header-icon">{{ channel.icon }}</div>
+      <div class="channel-header-info">
+        <h1 class="channel-header-name"># {{ channel.name }}</h1>
+        <p class="channel-header-desc">{{ channel.description }}</p>
+        <div class="channel-header-meta">
+          <a href="{% url 'channels:members' slug=channel.slug %}" style="color:inherit;text-decoration:none"><i class="bi bi-people-fill"></i> {{ member_count }} members</a>
+          {% if channel.is_private %}
+            <span class="privacy-badge"><i class="bi bi-lock-fill"></i> Private</span>
+          {% endif %}
+          {% if is_moderator %}
+            <span class="mod-badge"><i class="bi bi-shield-fill-check"></i> Moderator</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="channel-header-actions ms-auto">
+        {% if membership %}
+          <button class="btn-secondary-custom" id="inviteFriendBtn">
+            <i class="bi bi-person-plus-fill"></i> Invite
+          </button>
+          {% if can_post %}
+          <button class="btn-primary-custom" id="newDiscussionBtn">
+            <i class="bi bi-plus-lg"></i> New Thread
+          </button>
+          {% endif %}
+          <form method="post" action="{% url 'channels:leave' slug=channel.slug %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-ghost-custom btn-danger-ghost">Leave</button>
+          </form>
+        {% else %}
+          {% if channel.is_private %}
+            {% if access_request %}
+              <button class="btn-secondary-custom" disabled>
+                Request {{ access_request.status }}
+              </button>
+            {% else %}
+              <button class="btn-primary-custom" id="requestAccessBtn">
+                <i class="bi bi-hand-raised-fill"></i> Request Access
+              </button>
+            {% endif %}
+          {% else %}
+            <form method="post" action="{% url 'channels:join' slug=channel.slug %}">
+              {% csrf_token %}
+              <button type="submit" class="btn-primary-custom">
+                <i class="bi bi-plus-circle-fill"></i> Join Channel
+              </button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Moderator Pending Requests Panel -->
+  {% if pending_requests %}
+  <div class="mod-panel">
+    <h3 class="mod-panel-title"><i class="bi bi-shield-exclamation"></i> Pending Access Requests</h3>
+    {% for ar in pending_requests %}
+    <div class="mod-request-card" id="ar-{{ ar.pk }}">
+      <div class="mod-request-user">
+        <span class="user-initial-circle" style="background:#5865F2">{{ ar.user.get_avatar_initial }}</span>
+        <strong>{{ ar.user.get_display_name }}</strong>
+        <span class="text-muted">@{{ ar.user.username }}</span>
+      </div>
+      {% if ar.message %}<p class="mod-request-msg">{{ ar.message }}</p>{% endif %}
+      <div class="mod-request-actions">
+        <button class="btn-primary-custom btn-sm-custom"
+                onclick="reviewAccessRequest({{ ar.pk }}, 'approve', '{{ channel.slug }}')">
+          <i class="bi bi-check-lg"></i> Approve
+        </button>
+        <button class="btn-ghost-custom btn-danger-ghost btn-sm-custom"
+                onclick="reviewAccessRequest({{ ar.pk }}, 'deny', '{{ channel.slug }}')">
+          <i class="bi bi-x-lg"></i> Deny
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Discussions List -->
+  <div class="discussions-list" id="discussionsList">
+    <div class="loading-spinner" id="discussionsLoader">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <div class="load-more-wrap" id="loadMoreWrap" style="display:none">
+    <button class="btn-ghost-custom" id="loadMoreBtn">Load More</button>
+  </div>
+
+</div>
+
+<!-- ── New Discussion Modal ── -->
+<div class="modal-overlay" id="newDiscussionOverlay" style="display:none" onclick="closeNewDiscussionModal(event)">
+  <div class="compose-modal" id="newDiscussionModal">
+    <div class="compose-modal-header">
+      <h3><i class="bi bi-pencil-square"></i> New Thread in #{{ channel.name }}</h3>
+      <button class="modal-close-btn" onclick="closeNewDiscussionModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="compose-modal-body">
+      <input type="text" id="newDiscTitle" class="compose-input" placeholder="Thread title…" maxlength="200" />
+      <textarea id="newDiscBody" class="compose-textarea" placeholder="What's on your mind? Share your question, insight, or resource…" rows="6"></textarea>
+    </div>
+    <div class="compose-modal-footer">
+      <button class="btn-ghost-custom" onclick="closeNewDiscussionModal()">Cancel</button>
+      <button class="btn-primary-custom" onclick="submitNewDiscussion('{{ channel.slug }}')">
+        <i class="bi bi-send-fill"></i> Post Thread
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Invite Friend Modal ── -->
+<div class="modal-overlay" id="inviteModalOverlay" style="display:none" onclick="closeInviteModal(event)">
+  <div class="compose-modal" id="inviteModal">
+    <div class="compose-modal-header">
+      <h3><i class="bi bi-person-plus-fill"></i> Invite a Friend</h3>
+      <button class="modal-close-btn" onclick="closeInviteModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="compose-modal-body">
+      <div id="inviteFriendsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Request Access Modal ── -->
+<div class="modal-overlay" id="requestAccessOverlay" style="display:none" onclick="closeRequestModal(event)">
+  <div class="compose-modal" id="requestAccessModal">
+    <div class="compose-modal-header">
+      <h3><i class="bi bi-hand-raised-fill"></i> Request Posting Access</h3>
+      <button class="modal-close-btn" onclick="closeRequestModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="compose-modal-body">
+      <p>This is a private channel. Send a request to the moderator to gain posting rights.</p>
+      <textarea id="requestMsg" class="compose-textarea" placeholder="Optional: introduce yourself or explain why you'd like to post here…" rows="4"></textarea>
+    </div>
+    <div class="compose-modal-footer">
+      <button class="btn-ghost-custom" onclick="closeRequestModal()">Cancel</button>
+      <button class="btn-primary-custom" onclick="submitAccessRequest('{{ channel.slug }}')">
+        <i class="bi bi-send-fill"></i> Send Request
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CHANNEL_SLUG = "{{ channel.slug }}";
+const CHANNEL_COLOR = "{{ channel.color }}";
+const IS_MODERATOR = {{ is_moderator|yesno:"true,false" }};
+const CAN_POST = {{ can_post|yesno:"true,false" }};
+
+// Load discussions on page load
+document.addEventListener("DOMContentLoaded", () => {
+  loadDiscussions(CHANNEL_SLUG);
+  // Wire up modals
+  const ndBtn = document.getElementById("newDiscussionBtn");
+  if (ndBtn) ndBtn.onclick = openNewDiscussionModal;
+  const invBtn = document.getElementById("inviteFriendBtn");
+  if (invBtn) invBtn.onclick = openInviteModal;
+  const reqBtn = document.getElementById("requestAccessBtn");
+  if (reqBtn) reqBtn.onclick = openRequestModal;
+});
+</script>
+{% endblock %}

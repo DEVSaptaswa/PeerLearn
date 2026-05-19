@@ -1,0 +1,37 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# PeerLearn — docker-compose.dev.yml
+#
+# Development overrides. Extends docker-compose.yml.
+# Enables direct port access for database GUIs and replaces Gunicorn
+# with Django's runserver for hot-reload.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#   (or alias: make dev)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  web:
+    # Override CMD: Django dev server with auto-reload
+    command: >
+      python manage.py runserver 0.0.0.0:8000
+    environment:
+      DEBUG: "True"
+      SEED_DATA: "true"
+    # Expose web directly (bypass nginx) so you can hit localhost:8000
+    ports:
+      - "8000:8000"
+
+  # Expose DB ports so you can connect with local GUI tools
+  mysql:
+    ports:
+      - "3306:3306"
+
+  mongo:
+    ports:
+      - "27017:27017"
+
+  redis:
+    ports:
+      - "6379:6379"

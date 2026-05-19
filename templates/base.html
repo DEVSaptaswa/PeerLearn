@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}PeerLearn{% endblock %} — PeerLearn</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="app-body">
+
+{% if user.is_authenticated %}
+
+<!-- ── TOP NAV ─────────────────────────────────────────────────────────────── -->
+<nav class="topnav" id="topnav">
+  <div class="topnav-left">
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle sidebar">
+      <span></span><span></span><span></span>
+    </button>
+    <a href="{% url 'core:home' %}" class="brand-logo">
+      <span class="brand-icon">🎓</span>
+      <span class="brand-name">PeerLearn</span>
+    </a>
+  </div>
+
+  <div class="topnav-center">
+    <div class="search-wrapper" id="searchWrapper">
+      <i class="bi bi-search search-icon"></i>
+      <input type="text" id="globalSearch" class="search-input"
+             placeholder="Search channels, people, threads…" autocomplete="off" />
+      <div class="search-results-dropdown" id="searchDropdown"></div>
+    </div>
+  </div>
+
+  <div class="topnav-right">
+    <!-- Theme toggle -->
+    <button class="icon-btn" id="themeToggleBtn" title="Toggle light/dark mode">
+      <i class="bi bi-moon-fill" id="themeIcon"></i>
+    </button>
+
+    <!-- Notifications bell -->
+    <div class="notif-wrapper" id="notifWrapper">
+      <button class="icon-btn" id="notifBtn" title="Friend requests">
+        <i class="bi bi-bell"></i>
+        {% if pending_friend_requests %}
+          <span class="notif-badge" id="notifBadge">{{ pending_friend_requests }}</span>
+        {% else %}
+          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        {% endif %}
+      </button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header">
+          <span>Friend Requests</span>
+          <span class="notif-count" id="notifCount">{{ pending_friend_requests }}</span>
+        </div>
+        <div id="notifList">
+          {% for req in sidebar_friend_requests %}
+          <div class="notif-item" id="freq-{{ req.friendship_id }}">
+            <div class="notif-avatar">
+              {% if req.avatar_url %}
+                <img src="{{ req.avatar_url }}" alt="{{ req.user.username }}" />
+              {% else %}
+                <div class="notif-avatar-initial" style="background:{{ req.avatar_color }}">{{ req.initial }}</div>
+              {% endif %}
+            </div>
+            <div class="notif-info">
+              <strong>{{ req.user.get_display_name }}</strong>
+              <span>wants to be friends</span>
+            </div>
+            <div class="notif-actions">
+              <button class="btn-xs-accept" onclick="respondFriendRequest({{ req.friendship_id }},'accept',this)">✓</button>
+              <button class="btn-xs-reject" onclick="respondFriendRequest({{ req.friendship_id }},'reject',this)">✕</button>
+            </div>
+          </div>
+          {% empty %}
+          <div class="notif-empty" id="notifEmpty">No pending requests</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile dropdown -->
+    <div class="profile-dropdown-wrapper" id="profileDropdownWrapper">
+      <button class="profile-avatar-btn" id="profileAvatarBtn">
+        {% if user.profile.get_avatar_url %}
+          <img src="{{ user.profile.get_avatar_url }}" alt="{{ user.username }}" class="nav-avatar-img" />
+        {% else %}
+          <div class="nav-avatar-initial" style="background:{{ user.profile.avatar_color }}">{{ user.get_avatar_initial }}</div>
+        {% endif %}
+        <span class="status-dot status-dot--{{ my_status|default:'offline' }}" id="myStatusDot"></span>
+      </button>
+
+      <div class="profile-dropdown" id="profileDropdown">
+        <div class="profile-dropdown-header">
+          <div class="pd-avatar">
+            {% if user.profile.get_avatar_url %}
+              <img src="{{ user.profile.get_avatar_url }}" alt="{{ user.username }}" />
+            {% else %}
+              <div class="pd-avatar-initial" style="background:{{ user.profile.avatar_color }}">{{ user.get_avatar_initial }}</div>
+            {% endif %}
+          </div>
+          <div class="pd-info">
+            <span class="pd-display-name">{{ user.get_display_name }}</span>
+            <span class="pd-username">@{{ user.username }}</span>
+          </div>
+        </div>
+        <div class="pd-divider"></div>
+        <div class="pd-section-label">SET STATUS</div>
+        <button class="pd-item status-toggle-btn {% if my_status == 'active' %}pd-item--active{% endif %}" data-status="clear">
+          <span class="status-dot status-dot--active"></span> Online
+        </button>
+        <button class="pd-item status-toggle-btn {% if my_status == 'away' %}pd-item--active{% endif %}" data-status="dnd">
+          <span class="status-dot status-dot--away"></span> Do Not Disturb
+        </button>
+        <button class="pd-item status-toggle-btn {% if my_status == 'offline' %}pd-item--active{% endif %}" data-status="invisible">
+          <span class="status-dot status-dot--offline"></span> Appear Offline
+        </button>
+        <div class="pd-divider"></div>
+        <a href="{% url 'accounts:profile' %}" class="pd-item"><i class="bi bi-person-circle"></i> View Profile</a>
+        <a href="{% url 'accounts:edit_profile' %}" class="pd-item"><i class="bi bi-gear"></i> Settings</a>
+        <a href="{% url 'channels:create' %}" class="pd-item"><i class="bi bi-plus-circle"></i> Create Channel</a>
+        <div class="pd-divider"></div>
+        <a href="{% url 'accounts:logout' %}" class="pd-item pd-item--danger"><i class="bi bi-box-arrow-right"></i> Log Out</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── THREE-COLUMN LAYOUT ─────────────────────────────────────────────────── -->
+<div class="app-layout" id="appLayout">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar-left" id="sidebarLeft">
+    <div class="sidebar-section">
+      <span class="sidebar-label">CHANNELS</span>
+      <a href="{% url 'channels:list' %}" class="sidebar-btn"><i class="bi bi-compass"></i><span>Discover</span></a>
+      <a href="{% url 'channels:create' %}" class="sidebar-btn sidebar-btn--create"><i class="bi bi-plus-lg"></i><span>New Channel</span></a>
+    </div>
+    {% if sidebar_channels %}
+    <div class="sidebar-section">
+      <span class="sidebar-label">JOINED</span>
+      <nav class="channel-nav">
+        {% for channel in sidebar_channels %}
+        <a href="{% url 'channels:detail' slug=channel.slug %}"
+           class="channel-nav-item" data-channel-slug="{{ channel.slug }}"
+           style="--accent:{{ channel.color }}">
+          <span class="channel-icon">{{ channel.icon }}</span>
+          <span class="channel-name"># {{ channel.name }}</span>
+          {% if channel.is_private %}<i class="bi bi-lock-fill channel-lock ms-auto"></i>{% endif %}
+        </a>
+        {% endfor %}
+      </nav>
+    </div>
+    {% endif %}
+    <div class="sidebar-footer">
+      <div class="my-status-bar">
+        {% if user.profile.get_avatar_url %}
+          <img src="{{ user.profile.get_avatar_url }}" class="my-status-avatar" alt="" />
+        {% else %}
+          <div class="my-status-avatar-initial" style="background:{{ user.profile.avatar_color }}">{{ user.get_avatar_initial }}</div>
+        {% endif %}
+        <div class="my-status-info"><span class="my-status-name">{{ user.get_display_name }}</span></div>
+        <a href="{% url 'accounts:edit_profile' %}" class="my-status-settings"><i class="bi bi-gear-fill"></i></a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="mainContent">
+    {% if messages %}
+    <div class="flash-messages">
+      {% for message in messages %}
+      <div class="flash flash--{{ message.tags }}" role="alert">
+        {{ message }}<button class="flash-close" onclick="this.parentElement.remove()">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- RIGHT SIDEBAR -->
+  <aside class="sidebar-right" id="sidebarRight">
+
+    <!-- Pending friend requests section -->
+    {% if sidebar_friend_requests %}
+    <div class="sidebar-section">
+      <span class="sidebar-label">FRIEND REQUESTS</span>
+      {% for req in sidebar_friend_requests %}
+      <div class="freq-card" id="sfreq-{{ req.friendship_id }}">
+        <div class="friend-avatar-wrap">
+          {% if req.avatar_url %}
+            <img src="{{ req.avatar_url }}" class="friend-avatar" alt="{{ req.user.username }}" />
+          {% else %}
+            <div class="friend-avatar friend-avatar--initial" style="background:{{ req.avatar_color }}">{{ req.initial }}</div>
+          {% endif %}
+        </div>
+        <div class="friend-info">
+          <span class="friend-name">{{ req.user.get_display_name }}</span>
+          <div class="freq-btns">
+            <button class="btn-xs-accept" onclick="respondFriendRequest({{ req.friendship_id }},'accept',this)">Accept</button>
+            <button class="btn-xs-reject" onclick="respondFriendRequest({{ req.friendship_id }},'reject',this)">Decline</button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Friends list -->
+    <div class="sidebar-section">
+      <span class="sidebar-label">FRIENDS
+        <span class="friend-count-badge" id="friendCountBadge"></span>
+      </span>
+    </div>
+    <div id="friendsList">
+      {% if sidebar_friends %}
+        {% regroup sidebar_friends by status as grouped_friends %}
+        {% for group in grouped_friends %}
+          <div class="friends-group">
+            <span class="friends-group-label">
+              {% if group.grouper == "active" %}🟢 ONLINE{% elif group.grouper == "away" %}🟡 AWAY{% else %}⚫ OFFLINE{% endif %}
+              — {{ group.list|length }}
+            </span>
+            {% for item in group.list %}
+            <div class="friend-card"
+                 data-user-id="{{ item.user.pk }}"
+                 data-username="{{ item.user.username }}"
+                 data-display="{{ item.user.get_display_name }}"
+                 data-color="{{ item.avatar_color }}"
+                 data-initial="{{ item.initial }}"
+                 data-avatar="{{ item.avatar_url|default:'' }}"
+                 data-status="{{ item.status }}"
+                 onclick="openFriendModal(this)">
+              <div class="friend-avatar-wrap">
+                {% if item.avatar_url %}
+                  <img src="{{ item.avatar_url }}" class="friend-avatar" alt="{{ item.user.username }}" />
+                {% else %}
+                  <div class="friend-avatar friend-avatar--initial" style="background:{{ item.avatar_color }}">{{ item.initial }}</div>
+                {% endif %}
+                <span class="friend-status-ring friend-status-ring--{{ item.status }}"></span>
+              </div>
+              <div class="friend-info">
+                <span class="friend-name">{{ item.user.get_display_name }}</span>
+                <span class="friend-status-text">{{ item.status }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="no-friends-msg">
+          <i class="bi bi-people" style="font-size:2rem;opacity:.3"></i>
+          <p>No friends yet.<br>Search for people to add!</p>
+        </div>
+      {% endif %}
+    </div>
+  </aside>
+
+</div>
+
+<!-- ── FRIEND PROFILE MODAL (hidden by default) ───────────────────────────── -->
+<div class="modal-overlay" id="friendModalOverlay" style="display:none" onclick="closeFriendModal(event)">
+  <div class="friend-modal" id="friendModal">
+    <button class="modal-close-btn" onclick="closeFriendModal()"><i class="bi bi-x-lg"></i></button>
+    <div class="friend-modal-banner" id="fmBanner"></div>
+    <div class="friend-modal-body">
+      <div class="fm-avatar-wrap" id="fmAvatarWrap"></div>
+      <h3 class="fm-display-name" id="fmDisplayName"></h3>
+      <p class="fm-username" id="fmUsername"></p>
+      <p class="fm-bio" id="fmBio"></p>
+      <div class="fm-stats" id="fmStats"></div>
+      <div class="fm-actions">
+        <button class="btn-primary-custom" id="fmChatBtn"><i class="bi bi-chat-dots-fill"></i> Message</button>
+        <a class="btn-secondary-custom" id="fmProfileLink"><i class="bi bi-person-circle"></i> Profile</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="auth-wrapper">
+  {% block auth_content %}{% endblock %}
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const CSRF_TOKEN     = "{{ csrf_token }}";
+  const CURRENT_USER_ID = {{ user.pk|default:"null" }};
+  const MY_STATUS_INIT  = "{{ my_status|default:'offline' }}";
+</script>
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

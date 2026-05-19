@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ target.get_display_name }}'s Profile{% endblock %}
+{% block content %}
+<div class="feed-container" style="max-width:680px">
+
+  <!-- Banner -->
+  <div style="background:linear-gradient(135deg,{{ target.profile.avatar_color }},color-mix(in srgb,{{ target.profile.avatar_color }} 40%,#1a1d26));border-radius:var(--radius-xl) var(--radius-xl) 0 0;height:130px;position:relative;">
+    {% if is_own %}
+    <a href="{% url 'accounts:edit_profile' %}" class="banner-edit-btn" title="Edit profile">
+      <i class="bi bi-pencil-fill"></i>
+    </a>
+    {% endif %}
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:0 0 var(--radius-xl) var(--radius-xl);padding:0 28px 28px;margin-bottom:20px">
+    <div style="margin-top:-40px;margin-bottom:12px">
+      {% if target.profile.get_avatar_url %}
+        <img src="{{ target.profile.get_avatar_url }}" alt="{{ target.username }}"
+             style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:4px solid var(--bg-surface)" />
+      {% else %}
+        <div style="width:80px;height:80px;border-radius:50%;background:{{ target.profile.avatar_color }};border:4px solid var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:white;position: relative;">
+          {{ target.get_avatar_initial }}
+        </div>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;margin-bottom:2px">{{ target.get_display_name }}</h1>
+        <p style="color:var(--text-muted);font-size:14px">@{{ target.username }}</p>
+        {% if target.bio %}
+          <p style="color:var(--text-secondary);margin-top:8px;font-size:14px">{{ target.bio }}</p>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        {% if is_own %}
+          <a href="{% url 'accounts:edit_profile' %}" class="btn-secondary-custom">
+            <i class="bi bi-pencil-fill"></i> Edit Profile
+          </a>
+        {% else %}
+          {% if friendship_status == "accepted" %}
+            <button class="btn-secondary-custom" disabled>
+              <i class="bi bi-people-fill"></i> Friends
+            </button>
+          {% elif friendship_status == "pending" %}
+            {% if i_sent_the_request %}
+              <!-- WE sent the request — show pending, no actions -->
+              <button class="btn-secondary-custom" disabled>
+                <i class="bi bi-hourglass-split"></i> Request Sent
+              </button>
+            {% else %}
+              <!-- THEY sent to us — show accept/reject -->
+              <button class="btn-primary-custom" onclick="respondFriendRequest({{ friendship_id }},'accept',this)">
+                <i class="bi bi-check-lg"></i> Accept Request
+              </button>
+              <button class="btn-ghost-custom btn-danger-ghost" onclick="respondFriendRequest({{ friendship_id }},'reject',this)">
+                <i class="bi bi-x-lg"></i> Decline
+              </button>
+            {% endif %}
+          {% else %}
+            <button class="btn-primary-custom" id="addFriendBtn" onclick="sendFriendRequest({{ target.pk }}, this)">
+              <i class="bi bi-person-plus-fill"></i> Add Friend
+            </button>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex;gap:24px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="text-align:center">
+        <div style="font-size:20px;font-weight:700">{{ friend_count }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Friends</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:20px;font-weight:700">{{ thread_count }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Threads</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:20px;font-weight:700">{{ channel_count }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Channels</div>
+      </div>
+    </div>
+  </div>
+
+  {% if friends %}
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px">
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text-muted)">FRIENDS</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      {% for friend in friends %}
+      <a href="{% url 'accounts:user_profile' username=friend.username %}"
+         style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:inherit">
+        {% if friend.profile.get_avatar_url %}
+          <img src="{{ friend.profile.get_avatar_url }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" />
+        {% else %}
+          <div style="width:48px;height:48px;border-radius:50%;background:{{ friend.profile.avatar_color }};display:flex;align-items:center;justify-content:center;font-weight:700;color:white">
+            {{ friend.get_avatar_initial }}
+          </div>
+        {% endif %}
+        <span style="font-size:11px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ friend.username }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function sendFriendRequest(userId, btn) {
+  try {
+    setButtonLoading(btn, true);
+    const data = await apiFetch(`/accounts/friend/request/${userId}/`, { method: "POST" });
+    btn.outerHTML = `<button class="btn-secondary-custom" disabled><i class="bi bi-hourglass-split"></i> Request Sent</button>`;
+    showToast("Friend request sent!", "success");
+  } catch(e) { showToast(e.message, "error"); setButtonLoading(btn, false); }
+}
+</script>
+{% endblock %}

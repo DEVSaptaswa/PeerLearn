@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Create Channel{% endblock %}
+{% block content %}
+<div class="feed-container" style="max-width:560px">
+  <div class="feed-header">
+    <h1 class="feed-title"><i class="bi bi-plus-circle-fill" style="color:var(--accent)"></i> Create a Channel</h1>
+    <span class="feed-subtitle">Build a space for a topic you love</span>
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px">
+    <form method="post" id="createChannelForm">
+      {% csrf_token %}
+
+      {% if form.errors %}
+      <div class="auth-error" style="margin-bottom:16px">
+        {% for field, errs in form.errors.items %}{% for e in errs %}<div>{{ e }}</div>{% endfor %}{% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Live preview -->
+      <div id="channelPreview" style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-input);border-radius:var(--radius-md);margin-bottom:20px;border-left:4px solid var(--accent)" id="previewCard">
+        <span id="previewIcon" style="font-size:2rem">📚</span>
+        <div>
+          <div id="previewName" style="font-weight:700;font-size:16px">#channel-name</div>
+          <div style="font-size:11px;color:var(--text-muted)">Preview</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 80px;gap:16px;margin-bottom:16px">
+        <div class="form-group-custom">
+          <label>Channel Name *</label>
+          {{ form.name }}
+        </div>
+        <div class="form-group-custom">
+          <label>Icon</label>
+          {{ form.icon }}
+        </div>
+      </div>
+
+      <div class="form-group-custom" style="margin-bottom:16px">
+        <label>Description</label>
+        {{ form.description }}
+      </div>
+
+      <!-- Custom colour picker (no system dialog) -->
+      <div class="form-group-custom" style="margin-bottom:16px">
+        <label>Accent Colour</label>
+        <div class="color-picker-grid" id="colorPickerGrid">
+          {% for hex, name in form.COLOR_CHOICES %}
+          <button type="button" class="color-swatch" data-color="{{ hex }}" title="{{ name }}"
+                  style="background:{{ hex }}" onclick="selectColor('{{ hex }}', this)"></button>
+          {% endfor %}
+        </div>
+        <!-- Hidden input that actually submits the value -->
+        <input type="hidden" name="color" id="colorInput" value="#5865F2" />
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+          Selected: <span id="colorHexDisplay" style="font-weight:600;color:var(--accent)">#5865F2</span>
+        </div>
+      </div>
+
+      <div class="form-group-custom" style="margin-bottom:20px">
+        <label>Privacy</label>
+        {{ form.privacy }}
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <a href="{% url 'channels:list' %}" class="btn-ghost-custom">Cancel</a>
+        <button type="submit" class="btn-primary-custom">
+          <i class="bi bi-check-lg"></i> Create Channel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const nameInput = document.querySelector("input[name='name']");
+const iconInput = document.querySelector("input[name='icon']");
+
+function updatePreview() {
+  const name  = nameInput?.value || "channel-name";
+  const icon  = iconInput?.value || "📚";
+  const color = document.getElementById("colorInput").value || "#5865F2";
+  document.getElementById("previewName").textContent = `#${name.toLowerCase().replace(/\s+/g,"-")}`;
+  document.getElementById("previewIcon").textContent = icon;
+  document.getElementById("channelPreview").style.borderLeftColor = color;
+}
+
+function selectColor(hex, btn) {
+  document.getElementById("colorInput").value = hex;
+  document.getElementById("colorHexDisplay").textContent = hex;
+  document.getElementById("colorHexDisplay").style.color = hex;
+  document.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+  btn.classList.add("selected");
+  updatePreview();
+}
+
+// Mark default colour as selected on load
+document.addEventListener("DOMContentLoaded", () => {
+  const defaultSwatch = document.querySelector('.color-swatch[data-color="#5865F2"]');
+  if (defaultSwatch) defaultSwatch.classList.add("selected");
+});
+
+nameInput?.addEventListener("input", updatePreview);
+iconInput?.addEventListener("input", updatePreview);
+</script>
+{% endblock %}

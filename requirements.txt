@@ -1,0 +1,20 @@
+# ── Web Framework ─────────────────────────────────────────────────────────────
+Django==4.2.9
+
+# ── WSGI Server (Linux/Docker production only — not used on Windows) ──────────
+gunicorn==21.2.0
+
+# ── Databases ─────────────────────────────────────────────────────────────────
+mysqlclient==2.2.4          # Needs C compiler. On Windows use requirements.windows.txt instead.
+pymongo==4.6.1
+
+# ── Cache / Presence ──────────────────────────────────────────────────────────
+redis==5.0.1
+django-redis==5.4.0
+
+# ── Static files ──────────────────────────────────────────────────────────────
+whitenoise==6.6.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv==1.0.0
+Pillow==10.2.0

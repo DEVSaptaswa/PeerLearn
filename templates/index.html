@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home Feed{% endblock %}
+
+{% block content %}
+<div class="feed-container">
+
+  <!-- Feed Header -->
+  <div class="feed-header">
+    <h1 class="feed-title">
+      <i class="bi bi-lightning-charge-fill" style="color:#FEE75C"></i>
+      Your Feed
+    </h1>
+    <span class="feed-subtitle">Threads from your channels</span>
+  </div>
+
+  {% if not joined_channels %}
+  <!-- Onboarding CTA -->
+  <div class="onboarding-card">
+    <div class="onboarding-icon">🚀</div>
+    <h2>Welcome to PeerLearn!</h2>
+    <p>You haven't joined any channels yet. Discover topics you care about and start learning with peers.</p>
+    <a href="{% url 'channels:list' %}" class="btn-primary-custom">
+      <i class="bi bi-compass-fill"></i> Discover Channels
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Trending Channels Strip -->
+  {% if trending_channels %}
+  <div class="trending-strip">
+    <span class="sidebar-label">🔥 TRENDING</span>
+    <div class="trending-chips">
+      {% for ch in trending_channels %}
+      <a href="{% url 'channels:detail' slug=ch.slug %}" class="trending-chip" style="--accent:{{ ch.color }}">
+        <span>{{ ch.icon }}</span> #{{ ch.name }}
+        <span class="chip-count">{{ ch.member_count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Discussion Feed -->
+  <div class="discussion-feed" id="discussionFeed">
+    {% for disc in feed_discussions %}
+    <article class="disc-card" data-disc-id="{{ disc.disc_id }}" style="--accent:{{ disc.channel_color|default:'#5865F2' }}">
+      <!-- Upvote column -->
+      <div class="disc-vote-col">
+        <button class="upvote-btn" onclick="upvoteDiscussion('{{ disc.disc_id }}', this)"
+                title="Upvote">
+          <i class="bi bi-arrow-up-circle-fill"></i>
+        </button>
+        <span class="vote-count">{{ disc.upvotes }}</span>
+      </div>
+
+      <!-- Content -->
+      <div class="disc-content">
+        <div class="disc-meta">
+          <a href="{% url 'channels:detail' slug=disc.channel_slug %}" class="disc-channel-tag" style="background:{{ disc.channel_color|default:'#5865F2' }}22;color:{{ disc.channel_color|default:'#5865F2' }}">
+            {{ disc.channel_icon|default:"📚" }} #{{ disc.channel_name }}
+          </a>
+          <span class="disc-time">{{ disc.created_at|date:"M j, Y" }}</span>
+          {% if disc.is_private_channel %}
+            <span class="privacy-badge"><i class="bi bi-lock-fill"></i> Private</span>
+          {% endif %}
+        </div>
+
+        <a href="{% url 'discussions:detail' channel_slug=disc.channel_slug discussion_id=disc.disc_id|stringformat:'s' %}"
+           class="disc-title-link">
+          <h2 class="disc-title">{{ disc.title }}</h2>
+        </a>
+        <p class="disc-excerpt">{{ disc.body|truncatechars:200 }}</p>
+
+        <div class="disc-footer">
+          <span class="disc-stat"><i class="bi bi-chat-left-dots"></i> {{ disc.reply_count }} replies</span>
+          <span class="disc-stat"><i class="bi bi-arrow-up"></i> {{ disc.upvotes }}</span>
+          <a href="{% url 'discussions:detail' channel_slug=disc.channel_slug discussion_id=disc.disc_id|stringformat:'s' %}"
+             class="disc-read-more">
+            Read thread <i class="bi bi-arrow-right-short"></i>
+          </a>
+        </div>
+      </div>
+    </article>
+    {% empty %}
+    {% if joined_channels %}
+    <div class="empty-feed">
+      <i class="bi bi-journals" style="font-size:3rem;opacity:.3"></i>
+      <p>No discussions yet in your channels.<br>Be the first to start one!</p>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

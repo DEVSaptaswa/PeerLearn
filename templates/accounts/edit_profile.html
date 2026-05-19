@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="feed-container" style="max-width:540px">
+  <div class="feed-header">
+    <h1 class="feed-title"><i class="bi bi-person-gear" style="color:var(--accent)"></i> Edit Profile</h1>
+  </div>
+
+  <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% if form.errors %}
+        <div class="auth-error" style="margin-bottom:16px">
+          {% for f, errs in form.errors.items %}{% for e in errs %}<div>{{ e }}</div>{% endfor %}{% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Avatar preview -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding:16px;background:var(--bg-input);border-radius:var(--radius-md)">
+        <div id="avatarPreviewWrap">
+          {% if user.profile.get_avatar_url %}
+            <img id="avatarPreview" src="{{ user.profile.get_avatar_url }}"
+                 style="width:72px;height:72px;border-radius:50%;object-fit:cover" />
+          {% else %}
+            <div style="width:72px;height:72px;border-radius:50%;background:{{ user.profile.avatar_color }};display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:white">
+              {{ user.get_avatar_initial }}
+            </div>
+          {% endif %}
+        </div>
+        <div>
+          <label class="btn-secondary-custom" style="cursor:pointer">
+            <i class="bi bi-upload"></i> Upload Photo
+            {{ form.avatar }}
+          </label>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:4px">JPG, PNG — max 5MB</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="form-group-custom">
+          <label>Display Name</label>
+          {{ form.display_name }}
+        </div>
+        <div class="form-group-custom">
+          <label>Email</label>
+          <input type="email" value="{{ user.email }}" class="form-control" disabled />
+        </div>
+      </div>
+
+      <div class="form-group-custom" style="margin-bottom:24px">
+        <label>Bio</label>
+        {{ form.bio }}
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <a href="{% url 'accounts:profile' %}" class="btn-ghost-custom">Cancel</a>
+        <button type="submit" class="btn-primary-custom">
+          <i class="bi bi-check-lg"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Hide the file input visually; label acts as the trigger
+document.querySelector("input[type='file']")?.style.setProperty("display","none");
+document.querySelector("input[type='file']")?.addEventListener("change", function() {
+  if (this.files && this.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrap = document.getElementById("avatarPreviewWrap");
+      wrap.innerHTML = `<img id="avatarPreview" src="${e.target.result}"
+        style="width:72px;height:72px;border-radius:50%;object-fit:cover" />`;
+    };
+    reader.readAsDataURL(this.files[0]);
+  }
+});
+</script>
+{% endblock %}

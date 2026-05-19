@@ -1,0 +1,65 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+.env.local
+.env.*.local
+
+# ── Django artifacts ──────────────────────────────────────────────────────────
+staticfiles/
+media/
+*.log
+db.sqlite3
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Documentation (not needed in image) ──────────────────────────────────────
+README.md
+CHANGELOG.md
+docs/
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# ── Docker files (not needed inside the image) ────────────────────────────────
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# ── CI ────────────────────────────────────────────────────────────────────────
+.github/
+.gitlab-ci.yml

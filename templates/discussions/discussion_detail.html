@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ discussion.title|truncatechars:50 }}{% endblock %}
+
+{% block content %}
+<div class="discussion-view"
+     data-channel-slug="{{ channel.slug }}"
+     data-disc-id="{{ discussion_id }}">
+
+  <!-- Back button -->
+  <a href="{% url 'channels:detail' slug=channel.slug %}" class="back-link">
+    <i class="bi bi-arrow-left-circle-fill"></i>
+    Back to #{{ channel.name }}
+  </a>
+
+  <!-- Discussion OP -->
+  <article class="disc-op-card">
+    <div class="disc-op-header">
+      {% if disc_author %}
+        {% with p=disc_author.profile %}
+        <div class="disc-op-avatar">
+          {% if p.get_avatar_url %}
+            <img src="{{ p.get_avatar_url }}" alt="{{ disc_author.username }}" />
+          {% else %}
+            <div class="avatar-initial-sm" style="background:{{ p.avatar_color }}">
+              {{ disc_author.get_avatar_initial }}
+            </div>
+          {% endif %}
+        </div>
+        {% endwith %}
+        <div>
+          <span class="disc-op-author">{{ disc_author.get_display_name }}</span>
+          <span class="disc-op-username">@{{ disc_author.username }}</span>
+          <span class="disc-op-time">{{ discussion.created_at|date:"M j, Y g:i A" }}</span>
+        </div>
+      {% endif %}
+      <span class="ms-auto disc-reply-count">
+        <i class="bi bi-chat-left-dots"></i> {{ discussion.reply_count }} replies
+      </span>
+    </div>
+    <h1 class="disc-op-title">{{ discussion.title }}</h1>
+    <div class="disc-op-body">{{ discussion.body|linebreaks }}</div>
+
+    <div class="disc-op-footer">
+      <button class="upvote-btn-inline" onclick="upvoteDiscussion('{{ discussion_id }}', this)">
+        <i class="bi bi-arrow-up-circle-fill"></i> <span>{{ discussion.upvotes }}</span>
+      </button>
+      {% if is_moderator %}
+      <button class="btn-ghost-custom btn-danger-ghost btn-xs-custom ms-auto"
+              onclick="modDeleteDiscussion('{{ channel.slug }}', '{{ discussion_id }}')">
+        <i class="bi bi-shield-x"></i> Remove Thread
+      </button>
+      {% endif %}
+    </div>
+  </article>
+
+  <!-- Messages Thread -->
+  <div class="messages-thread" id="messagesThread">
+    {% for msg in messages %}
+    <div class="msg-card {% if msg.is_deleted %}msg-card--deleted{% endif %}"
+         id="msg-{{ msg.id }}"
+         data-msg-id="{{ msg.id }}"
+         {% if msg.parent_message_id %}data-parent="{{ msg.parent_message_id }}"{% endif %}>
+      <div class="msg-avatar">
+        {% if msg.author_avatar %}
+          <img src="{{ msg.author_avatar }}" alt="{{ msg.author_username }}" />
+        {% else %}
+          <div class="avatar-initial-sm" style="background:{{ msg.author_color }}">
+            {{ msg.author_initial }}
+          </div>
+        {% endif %}
+      </div>
+      <div class="msg-body-wrap">
+        <div class="msg-header">
+          <span class="msg-author">{{ msg.author_display }}</span>
+          <span class="msg-time">{{ msg.created_at|date:"M j g:i A" }}</span>
+          {% if msg.parent_message_id %}
+            <span class="msg-reply-tag"><i class="bi bi-reply-fill"></i> Reply</span>
+          {% endif %}
+          <div class="msg-actions ms-auto">
+            {% if can_post and not msg.is_deleted %}
+            <button class="msg-action-btn" title="Reply" onclick="setReplyTarget('{{ msg.id }}', '{{ msg.author_display }}')">
+              <i class="bi bi-reply-fill"></i>
+            </button>
+            {% endif %}
+            {% if is_moderator and not msg.deleted_by_moderator %}
+            <button class="msg-action-btn msg-action-btn--danger" title="Delete (moderator)"
+                    onclick="modDeleteMessage('{{ channel.slug }}', '{{ msg.id }}')">
+              <i class="bi bi-shield-x"></i>
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="msg-content" id="msg-content-{{ msg.id }}">
+          {% if msg.deleted_by_moderator %}
+            <em class="deleted-msg-text">🚫 This message was removed by the moderator for violating community guidelines.</em>
+          {% else %}
+            {{ msg.body|linebreaks }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="no-messages-placeholder" id="noMsgPlaceholder">
+      <i class="bi bi-chat-square-dots" style="font-size:2.5rem;opacity:.3"></i>
+      <p>No replies yet. Be the first to contribute!</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Reply Composer -->
+  {% if can_post %}
+  <div class="reply-composer" id="replyComposer">
+    <div class="reply-target-banner" id="replyTargetBanner" style="display:none">
+      <span id="replyTargetText"></span>
+      <button onclick="clearReplyTarget()" class="clear-reply-btn"><i class="bi bi-x"></i></button>
+    </div>
+    <div class="composer-row">
+      <div class="composer-avatar">
+        {% if user.profile.get_avatar_url %}
+          <img src="{{ user.profile.get_avatar_url }}" alt="{{ user.username }}" />
+        {% else %}
+          <div class="avatar-initial-sm" style="background:{{ user.profile.avatar_color }}">
+            {{ user.get_avatar_initial }}
+          </div>
+        {% endif %}
+      </div>
+      <div class="composer-input-wrap">
+        <textarea id="messageInput" class="composer-input"
+                  placeholder="Write a thoughtful reply…" rows="3"></textarea>
+        <div class="composer-footer">
+          <span class="char-count" id="charCount">0 / 2000</span>
+          <button class="btn-primary-custom" id="sendMsgBtn"
+                  onclick="submitMessage('{{ channel.slug }}', '{{ discussion_id }}')">
+            <i class="bi bi-send-fill"></i> Post Reply
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% elif not membership %}
+  <div class="join-to-reply">
+    <p>
+      <i class="bi bi-lock-fill"></i>
+      Join <strong>#{{ channel.name }}</strong> to participate in this discussion.
+    </p>
+    <a href="{% url 'channels:detail' slug=channel.slug %}" class="btn-primary-custom">
+      Join Channel
+    </a>
+  </div>
+  {% else %}
+  <div class="join-to-reply">
+    <p><i class="bi bi-hourglass-split"></i> Your access request is pending moderator approval.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CHANNEL_SLUG = "{{ channel.slug }}";
+const DISCUSSION_ID = "{{ discussion_id }}";
+const IS_MODERATOR = {{ is_moderator|yesno:"true,false" }};
+let replyTargetId = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("messageInput");
+  if (input) {
+    input.addEventListener("input", () => {
+      document.getElementById("charCount").textContent = `${input.value.length} / 2000`;
+    });
+    input.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        submitMessage(CHANNEL_SLUG, DISCUSSION_ID);
+      }
+    });
+  }
+  // Scroll to bottom of thread
+  const thread = document.getElementById("messagesThread");
+  if (thread) thread.scrollTop = thread.scrollHeight;
+});
+</script>
+{% endblock %}
