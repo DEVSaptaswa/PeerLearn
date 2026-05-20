@@ -12,15 +12,15 @@
 async function apiFetch(url, options = {}) {
   const merged = {
     headers: {
-      "Content-Type":    "application/json",
-      "X-CSRFToken":     CSRF_TOKEN,
-      "X-Requested-With":"XMLHttpRequest",
+      "Content-Type": "application/json",
+      "X-CSRFToken": CSRF_TOKEN,
+      "X-Requested-With": "XMLHttpRequest",
     },
     credentials: "same-origin",
     ...options,
   };
   if (options.headers) Object.assign(merged.headers, options.headers);
-  const res  = await fetch(url, merged);
+  const res = await fetch(url, merged);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
@@ -28,8 +28,8 @@ async function apiFetch(url, options = {}) {
 
 function escHtml(str) {
   return String(str ?? "")
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function showToast(message, type = "info") {
@@ -90,7 +90,7 @@ document.getElementById("themeToggleBtn")?.addEventListener("click", () => {
    3. HAMBURGER SIDEBAR TOGGLE
 ═══════════════════════════════════════════════════════════════════ */
 const hamburgerBtn = document.getElementById("hamburgerBtn");
-const appLayout    = document.getElementById("appLayout");
+const appLayout = document.getElementById("appLayout");
 
 hamburgerBtn?.addEventListener("click", () => {
   const collapsed = appLayout.classList.toggle("sidebar-collapsed");
@@ -106,7 +106,7 @@ if (localStorage.getItem("sidebarCollapsed") === "1") {
    4. PROFILE DROPDOWN
 ═══════════════════════════════════════════════════════════════════ */
 const profileAvatarBtn = document.getElementById("profileAvatarBtn");
-const profileDropdown  = document.getElementById("profileDropdown");
+const profileDropdown = document.getElementById("profileDropdown");
 
 profileAvatarBtn?.addEventListener("click", e => {
   e.stopPropagation();
@@ -178,11 +178,11 @@ document.querySelectorAll(".status-toggle-btn").forEach(btn => {
 /* ═══════════════════════════════════════════════════════════════════
    7. GLOBAL SEARCH
 ═══════════════════════════════════════════════════════════════════ */
-const globalSearch   = document.getElementById("globalSearch");
+const globalSearch = document.getElementById("globalSearch");
 const searchDropdown = document.getElementById("searchDropdown");
 
 function renderSearchResults(data) {
-  const { users=[], channels=[], discussions=[], messages=[] } = data;
+  const { users = [], channels = [], discussions = [], messages = [] } = data;
   const total = users.length + channels.length + discussions.length + messages.length;
 
   if (total === 0) {
@@ -230,12 +230,12 @@ const debouncedSearch = debounce(async q => {
   try {
     const data = await apiFetch(`/discussions/search/?q=${encodeURIComponent(q)}`);
     renderSearchResults(data);
-  } catch {}
+  } catch { }
 }, 350);
 
-globalSearch?.addEventListener("input",  e => debouncedSearch(e.target.value.trim()));
-globalSearch?.addEventListener("focus",  () => { if (globalSearch.value.length >= 2) searchDropdown?.classList.add("active"); });
-globalSearch?.addEventListener("keydown",e => { if (e.key === "Escape") { searchDropdown?.classList.remove("active"); globalSearch.blur(); }});
+globalSearch?.addEventListener("input", e => debouncedSearch(e.target.value.trim()));
+globalSearch?.addEventListener("focus", () => { if (globalSearch.value.length >= 2) searchDropdown?.classList.add("active"); });
+globalSearch?.addEventListener("keydown", e => { if (e.key === "Escape") { searchDropdown?.classList.remove("active"); globalSearch.blur(); } });
 document.addEventListener("click", e => { if (!e.target.closest("#searchWrapper")) searchDropdown?.classList.remove("active"); });
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -245,7 +245,7 @@ async function pollFriendStatuses() {
   try {
     const data = await apiFetch("/accounts/api/friends/status/");
     if (!data.friends) return;
-    const order = { active:0, away:1, offline:2 };
+    const order = { active: 0, away: 1, offline: 2 };
     let online = 0;
     data.friends.forEach(f => {
       if (f.status !== "offline") online++;
@@ -259,7 +259,7 @@ async function pollFriendStatuses() {
     });
     const badge = document.getElementById("friendCountBadge");
     if (badge) { badge.textContent = online || ""; badge.style.display = online ? "inline-flex" : "none"; }
-  } catch {}
+  } catch { }
 }
 
 if (document.getElementById("friendsList")) {
@@ -274,37 +274,40 @@ const friendModalOverlay = document.getElementById("friendModalOverlay");
 
 function openFriendModal(cardEl) {
   if (!friendModalOverlay) return;
-  const userId      = cardEl.dataset.userId;
+  const userId = cardEl.dataset.userId;
   const displayName = cardEl.dataset.display;
-  const color       = cardEl.dataset.color;
-  const initial     = cardEl.dataset.initial;
-  const avatarUrl   = cardEl.dataset.avatar;
-  const status      = cardEl.dataset.status;
-  const username    = cardEl.dataset.username;
+  const color = cardEl.dataset.color;
+  const initial = cardEl.dataset.initial;
+  const avatarUrl = cardEl.dataset.avatar;
+  const status = cardEl.dataset.status;
+  const username = cardEl.dataset.username;
 
-  const statusColors = { active:"var(--green)", away:"var(--yellow)", offline:"var(--text-muted)" };
+  const statusColors = { active: "var(--green)", away: "var(--yellow)", offline: "var(--text-muted)" };
 
-  document.getElementById("fmBanner").style.background =
-    `linear-gradient(135deg,${color},color-mix(in srgb,${color} 60%,#1a1d26))`;
+  const bannerEl = document.getElementById("fmBanner");
+  bannerEl.style.background = `linear-gradient(135deg, ${color}, color-mix(in srgb, ${color} 60%, #1a1d26))`;
 
   const wrap = document.getElementById("fmAvatarWrap");
   wrap.innerHTML = avatarUrl
     ? `<img src="${escHtml(avatarUrl)}" alt="${escHtml(username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
     : `<div class="fm-avatar-initial" style="background:${color}">${escHtml(initial)}</div>`;
-  wrap.style.boxShadow = `0 0 0 3px ${statusColors[status]||"var(--text-muted)"}`;
+  wrap.style.boxShadow = `0 0 0 3px ${statusColors[status] || "var(--text-muted)"}`;
 
   document.getElementById("fmDisplayName").textContent = displayName;
-  document.getElementById("fmUsername").textContent    = `@${username}`;
-  document.getElementById("fmBio").textContent         = "Loading…";
-  document.getElementById("fmStats").innerHTML         = "";
+  document.getElementById("fmUsername").textContent = `@${username}`;
+  document.getElementById("fmBio").textContent = "Loading…";
+  document.getElementById("fmStats").innerHTML = "";
 
   apiFetch(`/accounts/api/profile-mini/${userId}/`)
     .then(d => {
       document.getElementById("fmBio").textContent = d.bio || "No bio yet.";
       document.getElementById("fmStats").innerHTML = `
-        <div class="fm-stat"><span class="fm-stat-val">${d.friend_count??0}</span><span class="fm-stat-lbl">Friends</span></div>
-        <div class="fm-stat"><span class="fm-stat-val">${d.thread_count??0}</span><span class="fm-stat-lbl">Threads</span></div>
-        <div class="fm-stat"><span class="fm-stat-val">${d.channel_count??0}</span><span class="fm-stat-lbl">Channels</span></div>`;
+        <div class="fm-stat"><span class="fm-stat-val">${d.friend_count ?? 0}</span><span class="fm-stat-lbl">Friends</span></div>
+        <div class="fm-stat"><span class="fm-stat-val">${d.thread_count ?? 0}</span><span class="fm-stat-lbl">Threads</span></div>
+        <div class="fm-stat"><span class="fm-stat-val">${d.channel_count ?? 0}</span><span class="fm-stat-lbl">Channels</span></div>`;
+        if (d.banner_url) {
+        bannerEl.style.background = `url('${d.banner_url}') center/cover no-repeat`;
+      }
     })
     .catch(() => { document.getElementById("fmBio").textContent = "Could not load profile."; });
 
@@ -342,7 +345,7 @@ async function respondFriendRequest(friendshipId, action, btn) {
     const countEl = document.getElementById("notifCount");
     let count = parseInt(badge?.textContent || "0", 10) - 1;
     count = Math.max(0, count);
-    if (badge)   { badge.textContent = count || ""; badge.style.display = count ? "inline-flex" : "none"; }
+    if (badge) { badge.textContent = count || ""; badge.style.display = count ? "inline-flex" : "none"; }
     if (countEl) countEl.textContent = count;
 
     // Show empty state if no more requests
@@ -385,7 +388,7 @@ async function loadDiscussions(channelSlug, append = false) {
 
     if (!data.discussions?.length && !append) {
       list.innerHTML = renderEmptyDiscussions();
-      document.getElementById("loadMoreWrap")?.style.setProperty("display","none");
+      document.getElementById("loadMoreWrap")?.style.setProperty("display", "none");
       return;
     }
 
@@ -409,9 +412,9 @@ async function loadDiscussions(channelSlug, append = false) {
 }
 
 function renderDiscussionCard(d, channelSlug) {
-  const time  = new Date(d.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  const time = new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   const color = d.author_color || "#5865F2";
-  const init  = (d.author_display || d.author_username || "?")[0].toUpperCase();
+  const init = (d.author_display || d.author_username || "?")[0].toUpperCase();
   const avatarHtml = d.author_avatar_url
     ? `<img src="${escHtml(d.author_avatar_url)}" style="width:22px;height:22px;border-radius:50%;object-fit:cover">`
     : `<div class="search-result-avatar" style="background:${color};width:22px;height:22px;font-size:10px">${escHtml(init)}</div>`;
@@ -436,7 +439,7 @@ function renderDiscussionCard(d, channelSlug) {
       <div class="disc-meta">
         <div style="display:flex;align-items:center;gap:6px">
           ${avatarHtml}
-          <span style="font-size:12px;font-weight:600">${escHtml(d.author_display||d.author_username||"Unknown")}</span>
+          <span style="font-size:12px;font-weight:600">${escHtml(d.author_display || d.author_username || "Unknown")}</span>
         </div>
         <span class="disc-time">${time}</span>
       </div>
@@ -478,22 +481,22 @@ function closeNewDiscussionModal(event) {
 }
 async function submitNewDiscussion(channelSlug) {
   const titleEl = document.getElementById("newDiscTitle");
-  const bodyEl  = document.getElementById("newDiscBody");
-  const title   = titleEl?.value.trim();
-  const body    = bodyEl?.value.trim();
+  const bodyEl = document.getElementById("newDiscBody");
+  const title = titleEl?.value.trim();
+  const body = bodyEl?.value.trim();
   if (!title) { showToast("Please enter a title.", "error"); titleEl?.focus(); return; }
-  if (!body)  { showToast("Please write something.", "error"); bodyEl?.focus(); return; }
+  if (!body) { showToast("Please write something.", "error"); bodyEl?.focus(); return; }
   const btn = document.querySelector("#newDiscussionModal .btn-primary-custom");
   setButtonLoading(btn, true);
   try {
     const data = await apiFetch(`/discussions/${channelSlug}/create/`, {
-      method:"POST", body:JSON.stringify({title, body}),
+      method: "POST", body: JSON.stringify({ title, body }),
     });
-    showToast("Thread posted! 🎉","success");
+    showToast("Thread posted! 🎉", "success");
     closeNewDiscussionModal();
     window.location.href = `/discussions/${channelSlug}/${data.discussion_id}/`;
-  } catch(e) {
-    showToast(e.message,"error");
+  } catch (e) {
+    showToast(e.message, "error");
   } finally {
     setButtonLoading(btn, false);
   }
@@ -507,7 +510,7 @@ let _replyTargetId = null;
 function setReplyTarget(messageId, authorName) {
   _replyTargetId = messageId;
   const banner = document.getElementById("replyTargetBanner");
-  const text   = document.getElementById("replyTargetText");
+  const text = document.getElementById("replyTargetText");
   if (banner && text) {
     text.innerHTML = `<i class="bi bi-reply-fill"></i> Replying to <strong>${escHtml(authorName)}</strong>`;
     banner.style.display = "flex";
@@ -522,22 +525,22 @@ function clearReplyTarget() {
 
 async function submitMessage(channelSlug, discussionId) {
   const input = document.getElementById("messageInput");
-  const text  = input?.value.trim();
+  const text = input?.value.trim();
   if (!text) { showToast("Message cannot be empty.", "error"); return; }
   const btn = document.getElementById("sendMsgBtn");
   setButtonLoading(btn, true);
   try {
     const data = await apiFetch(`/discussions/${channelSlug}/${discussionId}/reply/`, {
-      method:"POST", body:JSON.stringify({body:text, parent_message_id:_replyTargetId}),
+      method: "POST", body: JSON.stringify({ body: text, parent_message_id: _replyTargetId }),
     });
     input.value = "";
     document.getElementById("charCount").textContent = "0 / 2000";
     clearReplyTarget();
     appendMessageToThread(data);
     document.getElementById("noMsgPlaceholder")?.remove();
-    showToast("Reply posted!","success");
-  } catch(e) {
-    showToast(e.message,"error");
+    showToast("Reply posted!", "success");
+  } catch (e) {
+    showToast(e.message, "error");
   } finally {
     setButtonLoading(btn, false);
   }
@@ -547,8 +550,8 @@ function appendMessageToThread(msg) {
   const thread = document.getElementById("messagesThread");
   if (!thread) return;
   const card = document.createElement("div");
-  card.id          = `msg-${msg.id}`;
-  card.className   = "msg-card";
+  card.id = `msg-${msg.id}`;
+  card.className = "msg-card";
   card.dataset.msgId = msg.id;
 
   const avatarHtml = msg.author_avatar
@@ -575,7 +578,7 @@ function appendMessageToThread(msg) {
     </div>`;
   card.querySelector(`#msg-content-${msg.id}`).textContent = msg.body;
   thread.appendChild(card);
-  thread.scrollTo({top: thread.scrollHeight, behavior:"smooth"});
+  thread.scrollTo({ top: thread.scrollHeight, behavior: "smooth" });
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -583,12 +586,12 @@ function appendMessageToThread(msg) {
 ═══════════════════════════════════════════════════════════════════ */
 async function upvoteDiscussion(discussionId, buttonEl) {
   try {
-    const data = await apiFetch(`/discussions/upvote/${discussionId}/`, {method:"POST"});
-    
+    const data = await apiFetch(`/discussions/upvote/${discussionId}/`, { method: "POST" });
+
     const countEl = buttonEl.closest(".disc-vote-col,.disc-op-footer")
       ?.querySelector(".vote-count,.upvote-btn-inline span");
     if (countEl) countEl.textContent = data.upvotes;
-    
+
     if (data.voted) {
       buttonEl.classList.add("voted");
     } else {
@@ -596,7 +599,7 @@ async function upvoteDiscussion(discussionId, buttonEl) {
     }
     buttonEl.style.transform = "scale(1.3)";
     setTimeout(() => buttonEl.style.transform = "", 300);
-  } catch(e) { showToast(e.message,"error"); }
+  } catch (e) { showToast(e.message, "error"); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -606,67 +609,67 @@ async function modDeleteMessage(channelSlug, messageId) {
   if (!confirm("Remove this message? The action is logged.")) return;
   try {
     const data = await apiFetch(`/discussions/mod/${channelSlug}/message/${messageId}/delete/`, {
-      method:"POST", body:JSON.stringify({reason:""}),
+      method: "POST", body: JSON.stringify({ reason: "" }),
     });
     const contentEl = document.getElementById(`msg-content-${messageId}`);
     if (contentEl) contentEl.innerHTML = `<em class="deleted-msg-text">${escHtml(data.placeholder)}</em>`;
     document.getElementById(`msg-${messageId}`)?.classList.add("msg-card--deleted");
-    document.getElementById(`msg-${messageId}`)?.querySelectorAll(".msg-actions").forEach(a=>a.remove());
-    showToast("Message removed.","success");
-  } catch(e) { showToast(e.message,"error"); }
+    document.getElementById(`msg-${messageId}`)?.querySelectorAll(".msg-actions").forEach(a => a.remove());
+    showToast("Message removed.", "success");
+  } catch (e) { showToast(e.message, "error"); }
 }
 
 async function modDeleteDiscussion(channelSlug, discussionId) {
   if (!confirm("Remove this entire thread?")) return;
   try {
     await apiFetch(`/channels/${channelSlug}/mod/delete-discussion/`, {
-      method:"POST", body:JSON.stringify({discussion_id:discussionId}),
+      method: "POST", body: JSON.stringify({ discussion_id: discussionId }),
     });
     const card = document.querySelector(`[data-disc-id="${discussionId}"]`);
     if (card) {
       card.style.transition = "opacity .35s,transform .35s";
-      card.style.opacity    = "0";
-      card.style.transform  = "translateX(40px)";
+      card.style.opacity = "0";
+      card.style.transform = "translateX(40px)";
       setTimeout(() => card.remove(), 370);
     }
-    showToast("Thread removed.","success");
-  } catch(e) { showToast(e.message,"error"); }
+    showToast("Thread removed.", "success");
+  } catch (e) { showToast(e.message, "error"); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
   16. ACCESS REQUEST
 ═══════════════════════════════════════════════════════════════════ */
-function openRequestModal()  { const o=document.getElementById("requestAccessOverlay"); if(o) o.style.display="flex"; }
-function closeRequestModal(e){ if(e&&e.target!==document.getElementById("requestAccessOverlay")) return; const o=document.getElementById("requestAccessOverlay"); if(o) o.style.display="none"; }
+function openRequestModal() { const o = document.getElementById("requestAccessOverlay"); if (o) o.style.display = "flex"; }
+function closeRequestModal(e) { if (e && e.target !== document.getElementById("requestAccessOverlay")) return; const o = document.getElementById("requestAccessOverlay"); if (o) o.style.display = "none"; }
 
 async function submitAccessRequest(channelSlug) {
-  const msg = document.getElementById("requestMsg")?.value.trim()||"";
+  const msg = document.getElementById("requestMsg")?.value.trim() || "";
   const btn = document.querySelector("#requestAccessModal .btn-primary-custom");
-  setButtonLoading(btn,true);
+  setButtonLoading(btn, true);
   try {
-    await apiFetch(`/channels/${channelSlug}/request-access/`,{method:"POST",body:JSON.stringify({message:msg})});
-    showToast("Request sent! 🎉","success");
+    await apiFetch(`/channels/${channelSlug}/request-access/`, { method: "POST", body: JSON.stringify({ message: msg }) });
+    showToast("Request sent! 🎉", "success");
     closeRequestModal();
     const rb = document.getElementById("requestAccessBtn");
-    if (rb) { rb.disabled=true; rb.textContent="Request Pending"; }
-  } catch(e){ showToast(e.message||"Failed.","error"); } finally { setButtonLoading(btn,false); }
+    if (rb) { rb.disabled = true; rb.textContent = "Request Pending"; }
+  } catch (e) { showToast(e.message || "Failed.", "error"); } finally { setButtonLoading(btn, false); }
 }
 
 async function reviewAccessRequest(requestId, action, channelSlug) {
   const card = document.getElementById(`ar-${requestId}`);
   try {
-    const data = await apiFetch(`/channels/access-request/${requestId}/review/`,{
-      method:"POST", body:JSON.stringify({action}),
+    const data = await apiFetch(`/channels/access-request/${requestId}/review/`, {
+      method: "POST", body: JSON.stringify({ action }),
     });
-    showToast(`Request ${data.status}.`,"success");
-    if(card){ card.style.opacity="0"; card.style.transition="opacity .3s"; setTimeout(()=>card.remove(),320); }
+    showToast(`Request ${data.status}.`, "success");
+    if (card) { card.style.opacity = "0"; card.style.transition = "opacity .3s"; setTimeout(() => card.remove(), 320); }
     // Update member count badge if server returned new count
     if (data.member_count !== undefined) {
       document.querySelectorAll(".channel-member-count").forEach(el => {
         el.textContent = `${data.member_count} members`;
       });
     }
-  } catch(e){ showToast(e.message,"error"); }
+  } catch (e) { showToast(e.message, "error"); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -674,13 +677,13 @@ async function reviewAccessRequest(requestId, action, channelSlug) {
 ═══════════════════════════════════════════════════════════════════ */
 function openInviteModal() {
   const overlay = document.getElementById("inviteModalOverlay");
-  const listEl  = document.getElementById("inviteFriendsList");
-  if (!overlay||!listEl) return;
+  const listEl = document.getElementById("inviteFriendsList");
+  if (!overlay || !listEl) return;
   overlay.style.display = "flex";
   listEl.innerHTML = `<div class="loading-spinner"><div class="spinner"></div></div>`;
   apiFetch("/accounts/api/friends/status/").then(data => {
-    const friends = data.friends||[];
-    if (!friends.length) { listEl.innerHTML=`<div class="empty-feed" style="padding:24px"><p>No friends yet.</p></div>`; return; }
+    const friends = data.friends || [];
+    if (!friends.length) { listEl.innerHTML = `<div class="empty-feed" style="padding:24px"><p>No friends yet.</p></div>`; return; }
     listEl.innerHTML = friends.map(f => {
       const av = f.avatar_url
         ? `<img src="${escHtml(f.avatar_url)}" class="friend-avatar" />`
@@ -689,21 +692,21 @@ function openInviteModal() {
         <div class="friend-avatar-wrap">${av}<span class="friend-status-ring friend-status-ring--${f.status}"></span></div>
         <div class="friend-info"><span class="friend-name">${escHtml(f.display_name)}</span><span class="friend-status-text">${f.status}</span></div>
         <button class="btn-secondary-custom btn-sm-custom" style="margin-left:auto"
-                onclick="sendInvite('${typeof CHANNEL_SLUG!=='undefined'?CHANNEL_SLUG:''}',${f.id},'${escHtml(f.display_name)}',this)">
+                onclick="sendInvite('${typeof CHANNEL_SLUG !== 'undefined' ? CHANNEL_SLUG : ''}',${f.id},'${escHtml(f.display_name)}',this)">
           <i class="bi bi-send-fill"></i> Invite
         </button>
       </div>`;
     }).join("");
-  }).catch(()=>{ listEl.innerHTML=`<div class="empty-feed" style="padding:24px"><p>Could not load friends.</p></div>`; });
+  }).catch(() => { listEl.innerHTML = `<div class="empty-feed" style="padding:24px"><p>Could not load friends.</p></div>`; });
 }
-function closeInviteModal(e){ if(e&&e.target!==document.getElementById("inviteModalOverlay")) return; const o=document.getElementById("inviteModalOverlay"); if(o) o.style.display="none"; }
-async function sendInvite(channelSlug,userId,displayName,btn) {
-  setButtonLoading(btn,true);
+function closeInviteModal(e) { if (e && e.target !== document.getElementById("inviteModalOverlay")) return; const o = document.getElementById("inviteModalOverlay"); if (o) o.style.display = "none"; }
+async function sendInvite(channelSlug, userId, displayName, btn) {
+  setButtonLoading(btn, true);
   try {
-    await apiFetch(`/channels/${channelSlug}/invite/`,{method:"POST",body:JSON.stringify({user_id:userId})});
-    btn.innerHTML=`<i class="bi bi-check-lg"></i> Invited`; btn.disabled=true;
-    showToast(`Invited ${displayName}!`,"success");
-  } catch(e){ showToast(e.message,"error"); setButtonLoading(btn,false); }
+    await apiFetch(`/channels/${channelSlug}/invite/`, { method: "POST", body: JSON.stringify({ user_id: userId }) });
+    btn.innerHTML = `<i class="bi bi-check-lg"></i> Invited`; btn.disabled = true;
+    showToast(`Invited ${displayName}!`, "success");
+  } catch (e) { showToast(e.message, "error"); setButtonLoading(btn, false); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -721,13 +724,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Message input char counter
   const msgInput = document.getElementById("messageInput");
   if (msgInput) {
-    msgInput.addEventListener("input",()=>{
+    msgInput.addEventListener("input", () => {
       document.getElementById("charCount").textContent = `${msgInput.value.length} / 2000`;
     });
-    msgInput.addEventListener("keydown",e=>{
-      if ((e.ctrlKey||e.metaKey) && e.key==="Enter") submitMessage(
-        typeof CHANNEL_SLUG!=="undefined"?CHANNEL_SLUG:"",
-        typeof DISCUSSION_ID!=="undefined"?DISCUSSION_ID:""
+    msgInput.addEventListener("keydown", e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") submitMessage(
+        typeof CHANNEL_SLUG !== "undefined" ? CHANNEL_SLUG : "",
+        typeof DISCUSSION_ID !== "undefined" ? DISCUSSION_ID : ""
       );
     });
   }
@@ -741,7 +744,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (main) {
     main.style.opacity = "0"; main.style.transform = "translateY(6px)";
     main.style.transition = "opacity .3s ease,transform .3s ease";
-    requestAnimationFrame(()=>{ main.style.opacity="1"; main.style.transform="translateY(0)"; });
+    requestAnimationFrame(() => { main.style.opacity = "1"; main.style.transform = "translateY(0)"; });
   }
 });
 

@@ -251,4 +251,5 @@ def profile_mini_api(request, user_id):
         "friend_count": user.friend_count,
         "thread_count": thread_count,
         "channel_count": channel_count,
+        "banner_url": p.banner.url if (p and p.banner) else None,
     })
